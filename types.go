@@ -10,9 +10,9 @@ const (
 )
 
 type Pagination struct {
-	Page      int    `json:"page" query:"page"`             // 分页
-	Size      int    `json:"size" query:"size"`             // 每页多少条记录
-	NextToken string `json:"next_token" query:"next_token"` // 下一页标识
+	Page      int    `json:"page" query:"page" validate:"min=1" default:"1"`          // 分页
+	Size      int    `json:"size" query:"size" validate:"min=1,max=100" default:"10"` // 每页多少条记录
+	NextToken string `json:"next_token" query:"next_token"`                           // 下一页标识
 }
 
 type PageInfo struct {

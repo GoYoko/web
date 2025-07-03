@@ -43,6 +43,9 @@ func WithPage() Option {
 		if page.Size == 0 {
 			page.Size = 10
 		}
+		if page.Size > 100 {
+			page.Size = 100
+		}
 		ctx.page = page
 		return nil
 	}
