@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/GoYoko/web/locale"
+	"github.com/GoYoko/web/validate"
 )
 
 type Handler interface {
@@ -24,7 +25,7 @@ type Web struct {
 
 func New() *Web {
 	e := echo.New()
-	e.Validator = NewCustomValidator()
+	e.Validator = validate.NewCustomValidator()
 	return &Web{
 		e:      e,
 		locale: locale.NewLocalizer(),
