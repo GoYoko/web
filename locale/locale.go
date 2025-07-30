@@ -39,14 +39,10 @@ func NewLocalizerWithFile(defaultLang language.Tag, fs fs.FS, paths []string) *L
 	}
 }
 
-func (e *Localizer) Message(lang, id string, data map[string]any) string {
+func (e *Localizer) Message(lang, id string, data map[string]any) (string, error) {
 	loc := i18n.NewLocalizer(e.bundle, lang)
-	msg, err := loc.Localize(&i18n.LocalizeConfig{
+	return loc.Localize(&i18n.LocalizeConfig{
 		MessageID:    id,
 		TemplateData: data,
 	})
-	if err != nil {
-		return err.Error()
-	}
-	return msg
 }

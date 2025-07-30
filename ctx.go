@@ -55,7 +55,7 @@ func (c *Context) Page() *Pagination {
 	return c.page
 }
 
-func (c *Context) ErrMsg(id ErrorID, data map[string]any) string {
+func (c *Context) ErrMsg(id ErrorID, data map[string]any) (string, error) {
 	return c.locale.Message(c.Request().Header.Get("Accept-Language"), string(id), data)
 }
 
@@ -68,7 +68,11 @@ func (c *Context) Failed(code int, id ErrorID, err error) error {
 
 	if e, ok := err.(*Err); ok {
 		if e.err == nil {
-			e.err = errors.New(c.ErrMsg(e.id, e.data))
+			if msg, ee := c.ErrMsg(e.id, e.data); ee != nil {
+				e.err = err
+			} else {
+				e.err = errors.New(msg)
+			}
 		}
 		return c.failed(e.code, e.id, e.err, e.data)
 	}
@@ -77,12 +81,15 @@ func (c *Context) Failed(code int, id ErrorID, err error) error {
 
 func (c *Context) failed(code int, id ErrorID, err error, data map[string]any) error {
 	traceID := xid.New().String()
-	e := c.ErrMsg(id, data)
+	msg, ee := c.ErrMsg(id, data)
+	if ee != nil {
+		msg = "Internal Server Error"
+	}
 	logger.With("trace_id", traceID).With("err", err).Warn("request failed")
 	c.Set("err-msg", err.Error())
 	return c.JSON(code, Resp{
 		Code:    code,
-		Message: fmt.Sprintf("%s [trace_id: %s]", e, traceID),
+		Message: fmt.Sprintf("%s [trace_id: %s]", msg, traceID),
 	})
 }
 
