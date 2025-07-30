@@ -59,9 +59,26 @@ func (cv *CustomValidator) applyDefaultsRecursive(v reflect.Value) error {
 		}
 
 		if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct {
+			// 检查该结构体或其字段是否有default tag
+			hasDefaultTag := false
 			if field.IsNil() {
-				field.Set(reflect.New(field.Type().Elem()))
+				// 检查结构体类型的字段是否有default tag
+				structType := field.Type().Elem()
+				for j := 0; j < structType.NumField(); j++ {
+					if structType.Field(j).Tag.Get("default") != "" {
+						hasDefaultTag = true
+						break
+					}
+				}
+
+				// 只有当有default tag时才创建新实例
+				if hasDefaultTag {
+					field.Set(reflect.New(field.Type().Elem()))
+				} else {
+					continue // 没有default tag，保持为nil
+				}
 			}
+
 			if err := cv.applyDefaultsRecursive(field.Elem()); err != nil {
 				return err
 			}
