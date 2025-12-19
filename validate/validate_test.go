@@ -2,7 +2,12 @@ package validate
 
 import (
 	"testing"
+	"time"
 )
+
+type pointerField struct {
+	Count *int
+}
 
 func TestCustomValidator_ExampleUsage(t *testing.T) {
 	TestValidator()
@@ -58,6 +63,7 @@ func TestCustomValidator_SetDefault(t *testing.T) {
 		fieldName    string
 		defaultValue string
 		wantErr      bool
+		check        func(*testing.T, any)
 	}{
 		{
 			name:         "设置字符串默认值",
@@ -81,6 +87,19 @@ func TestCustomValidator_SetDefault(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name:         "设置指针默认值",
+			input:        &pointerField{},
+			fieldName:    "Count",
+			defaultValue: "12",
+			wantErr:      false,
+			check: func(t *testing.T, input any) {
+				pf := input.(*pointerField)
+				if pf.Count == nil || *pf.Count != 12 {
+					t.Fatalf("Count default value = %v, want %v", pf.Count, 12)
+				}
+			},
+		},
+		{
 			name:         "字段不存在",
 			input:        &UserRequest{},
 			fieldName:    "NonExistentField",
@@ -94,6 +113,10 @@ func TestCustomValidator_SetDefault(t *testing.T) {
 			err := validator.SetDefault(tt.input, tt.fieldName, tt.defaultValue)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CustomValidator.SetDefault() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil && tt.check != nil {
+				tt.check(t, tt.input)
 			}
 		})
 	}
@@ -184,5 +207,47 @@ func TestCustomValidator_NestedStruct(t *testing.T) {
 		if productReq.Contact.Website != "https://example.com" {
 			t.Errorf("Contact.Website default value = %v, want %v", productReq.Contact.Website, "https://example.com")
 		}
+	}
+}
+
+func TestCustomValidator_PointerAndCompositeDefaults(t *testing.T) {
+	validator := NewCustomValidator()
+
+	type complexDefaults struct {
+		Enabled *bool             `default:"true"`
+		Limit   *int              `default:"99"`
+		Tags    []string          `default:"[\"base\",\"beta\"]"`
+		Meta    map[string]string `default:"{\"env\":\"dev\"}"`
+		Payload any               `default:"{\"role\":\"user\"}"`
+		Timeout time.Duration     `default:"5s"`
+	}
+
+	req := &complexDefaults{}
+	if err := validator.applyDefaults(req); err != nil {
+		t.Fatalf("applyDefaults() error = %v", err)
+	}
+
+	if req.Enabled == nil || !*req.Enabled {
+		t.Fatalf("Enabled default value = %v, want %v", req.Enabled, true)
+	}
+	if req.Limit == nil || *req.Limit != 99 {
+		t.Fatalf("Limit default value = %v, want %v", req.Limit, 99)
+	}
+	if len(req.Tags) != 2 {
+		t.Fatalf("Tags default length = %d, want %d", len(req.Tags), 2)
+	}
+	if req.Meta == nil || req.Meta["env"] != "dev" {
+		t.Fatalf("Meta default value = %v, want env=dev", req.Meta)
+	}
+	if req.Timeout != 5*time.Second {
+		t.Fatalf("Timeout default value = %v, want %v", req.Timeout, 5*time.Second)
+	}
+
+	payload, ok := req.Payload.(map[string]any)
+	if !ok {
+		t.Fatalf("Payload type = %T, want map[string]any", req.Payload)
+	}
+	if payload["role"] != "user" {
+		t.Fatalf("Payload role = %v, want %v", payload["role"], "user")
 	}
 }
