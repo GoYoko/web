@@ -44,7 +44,31 @@ func (cv *CustomValidator) applyDefaultsRecursive(v reflect.Value) error {
 		return nil
 	}
 
-	if v.Kind() == reflect.Ptr {
+// 在 applyDefaultsRecursive 的 switch 中补充分支
+switch field.Kind() {
+case reflect.Struct, reflect.Ptr:
+    if err := cv.applyDefaultsRecursive(field); err != nil {
+        return err
+    }
+case reflect.Slice, reflect.Array:
+    for j := 0; j < field.Len(); j++ {
+        if err := cv.applyDefaultsRecursive(field.Index(j)); err != nil {
+            return err
+        }
+    }
+case reflect.Map:
+    // 仅处理 value
+    for _, k := range field.MapKeys() {
+        mv := field.MapIndex(k)
+        // MapIndex 返回不可设置的 Value，需要拷贝后递归并写回
+        vv := reflect.New(mv.Type()).Elem()
+        vv.Set(mv)
+        if err := cv.applyDefaultsRecursive(vv); err != nil {
+            return err
+        }
+        field.SetMapIndex(k, vv)
+    }
+}
 		if v.IsNil() {
 			return nil
 		}
