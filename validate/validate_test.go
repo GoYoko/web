@@ -119,7 +119,7 @@ func TestCustomValidator_applyDefaults(t *testing.T) {
 	if userReq.Email != "user@example.com" {
 		t.Errorf("Email default value = %v, want %v", userReq.Email, "user@example.com")
 	}
-	if !userReq.IsActive {
+	if userReq.IsActive == nil || !*userReq.IsActive {
 		t.Errorf("IsActive default value = %v, want %v", userReq.IsActive, true)
 	}
 	if userReq.Page != 1 {
@@ -153,7 +153,7 @@ func TestCustomValidator_NestedStruct(t *testing.T) {
 	if productReq.Category != "未分类" {
 		t.Errorf("Category default value = %v, want %v", productReq.Category, "未分类")
 	}
-	if productReq.InStock {
+	if productReq.InStock == nil || *productReq.InStock {
 		t.Errorf("InStock default value = %v, want %v", productReq.InStock, false)
 	}
 

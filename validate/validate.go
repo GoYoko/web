@@ -58,11 +58,24 @@ func (cv *CustomValidator) applyDefaultsRecursive(v reflect.Value) error {
 			continue
 		}
 
-		if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct {
-			// 检查该结构体或其字段是否有default tag
+		if field.Kind() == reflect.Ptr {
+			elemKind := field.Type().Elem().Kind()
+
+			// 处理基础类型指针 (*bool, *int, *string 等)
+			if elemKind != reflect.Struct {
+				defaultValue := fieldType.Tag.Get("default")
+				if defaultValue != "" && field.IsNil() {
+					field.Set(reflect.New(field.Type().Elem()))
+					if err := cv.setFieldValue(field.Elem(), defaultValue); err != nil {
+						return err
+					}
+				}
+				continue
+			}
+
+			// 处理结构体指针
 			hasDefaultTag := false
 			if field.IsNil() {
-				// 检查结构体类型的字段是否有default tag
 				structType := field.Type().Elem()
 				for j := 0; j < structType.NumField(); j++ {
 					if structType.Field(j).Tag.Get("default") != "" {
@@ -71,11 +84,10 @@ func (cv *CustomValidator) applyDefaultsRecursive(v reflect.Value) error {
 					}
 				}
 
-				// 只有当有default tag时才创建新实例
 				if hasDefaultTag {
 					field.Set(reflect.New(field.Type().Elem()))
 				} else {
-					continue // 没有default tag，保持为nil
+					continue
 				}
 			}
 
@@ -113,7 +125,7 @@ func (cv *CustomValidator) isZeroValue(field reflect.Value) bool {
 	case reflect.Float32, reflect.Float64:
 		return field.Float() == 0
 	case reflect.Bool:
-		return !field.Bool()
+		return false // bool 类型无法区分零值和未设置，建议使用 *bool
 	case reflect.Slice, reflect.Map, reflect.Ptr, reflect.Interface:
 		return field.IsNil()
 	default:

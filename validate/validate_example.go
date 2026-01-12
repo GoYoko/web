@@ -10,7 +10,7 @@ type UserRequest struct {
 	Name     string `json:"name" validate:"required" default:"匿名用户"`
 	Age      int    `json:"age" validate:"gte=0,lte=150" default:"18"`
 	Email    string `json:"email" validate:"email" default:"user@example.com"`
-	IsActive bool   `json:"is_active" default:"true"`
+	IsActive *bool  `json:"is_active" default:"true"`
 	Page     int    `json:"page" validate:"gte=1" default:"1"`
 	Size     int    `json:"size" validate:"gte=1,lte=100" default:"10"`
 }
@@ -36,7 +36,7 @@ type ProductRequest struct {
 	Price       float64      `json:"price" validate:"gte=0" default:"0.0"`
 	Description string       `json:"description" default:"暂无描述"`
 	Category    string       `json:"category" default:"未分类"`
-	InStock     bool         `json:"in_stock" default:"false"`
+	InStock     *bool        `json:"in_stock" default:"false"`
 	Address     Address      `json:"address"` // 嵌套结构体
 	Contact     *ContactInfo `json:"contact"` // 嵌套结构体指针
 }
