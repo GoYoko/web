@@ -125,7 +125,7 @@ func (cv *CustomValidator) isZeroValue(field reflect.Value) bool {
 	case reflect.Float32, reflect.Float64:
 		return field.Float() == 0
 	case reflect.Bool:
-		return false // bool 类型无法区分零值和未设置，建议使用 *bool
+		return !field.Bool() // 零值 false 时应用 default，建议使用 *bool 以区分未设置
 	case reflect.Slice, reflect.Map, reflect.Ptr, reflect.Interface:
 		return field.IsNil()
 	default:
