@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"errors"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -30,8 +31,15 @@ func (cv *CustomValidator) Validate(i any) error {
 
 func (cv *CustomValidator) applyDefaults(i any) error {
 	v := reflect.ValueOf(i)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
+	if v.Kind() != reflect.Ptr {
+		return errors.New("applyDefaults: input must be a pointer")
+	}
+	if v.IsNil() {
+		return errors.New("applyDefaults: input pointer is nil")
+	}
+	v = v.Elem()
+	if v.Kind() != reflect.Struct {
+		return errors.New("applyDefaults: input must be a pointer to struct")
 	}
 
 	return cv.applyDefaultsRecursive(v)
@@ -184,6 +192,13 @@ func (cv *CustomValidator) SetDefault(i any, fieldName, defaultValue string) err
 
 	if !field.CanSet() {
 		return echo.NewHTTPError(http.StatusBadRequest, "字段不可设置: "+fieldName)
+	}
+
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		return cv.setFieldValue(field.Elem(), defaultValue)
 	}
 
 	return cv.setFieldValue(field, defaultValue)
