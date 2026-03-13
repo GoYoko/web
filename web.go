@@ -57,6 +57,29 @@ func New() *Web {
 	}
 }
 
+func NewFromEcho(e *echo.Echo) *Web {
+	// otel 配置
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+	res := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("web"),
+	)
+	tp := strace.NewTracerProvider(
+		strace.WithSampler(strace.AlwaysSample()),
+		strace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+
+	return &Web{
+		e:      e,
+		locale: locale.NewLocalizer(),
+		es:     make([]ErrHandle, 0),
+	}
+}
+
 func (w *Web) Echo() *echo.Echo {
 	return w.e
 }
