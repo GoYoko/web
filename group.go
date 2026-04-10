@@ -76,3 +76,9 @@ func (g *Group) Group(prefix string, middleware ...echo.MiddlewareFunc) *Group {
 	g.group = gg
 	return g
 }
+
+func (g *Group) GroupX(prefix string, middleware ...echo.MiddlewareFunc) *Group {
+	gg := g.group.Group(prefix, middleware...)
+	g.group = gg
+	return g
+}
