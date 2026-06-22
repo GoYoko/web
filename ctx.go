@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
@@ -51,8 +52,25 @@ func (c *Context) Page() *Pagination {
 	return c.page
 }
 
+func (c *Context) Lang() string {
+	if cookie, err := c.Cookie("language"); err == nil {
+		if lang := normalizeLang(cookie.Value); lang != "" {
+			return lang
+		}
+	}
+	return normalizeLang(c.Request().Header.Get("Accept-Language"))
+}
+
+func normalizeLang(lang string) string {
+	lang = strings.TrimSpace(lang)
+	if strings.EqualFold(lang, "cn") {
+		return "zh"
+	}
+	return lang
+}
+
 func (c *Context) ErrMsg(id ErrorID, param map[string]any) string {
-	return c.locale.Message(c.Request().Header.Get("Accept-Language"), string(id), param)
+	return c.locale.Message(c.Lang(), string(id), param)
 }
 
 func (c *Context) Failed(status, code int, id ErrorID, err error) error {
